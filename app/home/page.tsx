@@ -15,42 +15,64 @@ interface LinksDataType {
   url: string;
   bio: string;
   date: any;
-  userId: string; // userIdを格納
-  username?: string; // usernameを格納するフィールド
-  tags?: string[]; // タグを格納するフィールドを追加
+  userId: string;
+  username?: string;
+  tags?: string[];
+  title: string;
+  groupID: string;
 }
 
 interface UserDataType {
   username: string;
 }
 
+interface GroupDataType {
+  groupName: string;
+}
+
 const Homepage = () => {
-  const [linksByTag, setLinksByTag] = useState<{
-    [tag: string]: LinksDataType[];
+  const [linksByGroup, setLinksByGroup] = useState<{
+    [groupID: string]: { groupName: string; links: LinksDataType[] };
   }>({});
 
   useEffect(() => {
     const fetchLinks = async () => {
       try {
-        // linksサブコレクションのクエリ
+        // linksサブコレクションのデータを取得
         const linksQuery = query(collectionGroup(db, "links"));
         const querySnapshot = await getDocs(linksQuery);
 
-        const groupedLinks: { [tag: string]: LinksDataType[] } = {};
+        const groupedLinks: {
+          [groupID: string]: { groupName: string; links: LinksDataType[] };
+        } = {};
 
-        // linksデータを取得し、対応するusernameも取得してタグでグループ化
+        // linksデータを取得し、対応するusernameとグループ名も取得してグループごとに分類
         await Promise.all(
           querySnapshot.docs.map(async (linkDoc) => {
             const data = linkDoc.data();
-            const linkPath = linkDoc.ref.path.split("/"); // パスを取得して解析
-            const userId = linkPath[1]; // userIdはパスの2番目の要素
+            const linkPath = linkDoc.ref.path.split("/");
+            const userId = linkPath[1];
             let username = "";
+            let groupName = "Unknown Group";
 
-            // 親のusersコレクションからusernameを取得
+            // usersコレクションからusernameを取得
             const userDoc = await getDoc(firestoreDoc(db, "users", userId));
             if (userDoc.exists()) {
-              const userData = userDoc.data() as UserDataType; // 型をキャスト
+              const userData = userDoc.data() as UserDataType;
               username = userData.username || "Unknown User";
+            }
+
+            // グループ名を取得
+            if (data.groupID) {
+              const groupDoc = await getDoc(
+                firestoreDoc(db, "groups", data.groupID)
+              );
+              if (groupDoc.exists()) {
+                const groupData = groupDoc.data() as GroupDataType;
+                groupName = groupData.groupName;
+              } else {
+                console.error(`Group with ID ${data.groupID} not found.`);
+              }
             }
 
             const link: LinksDataType = {
@@ -59,21 +81,24 @@ const Homepage = () => {
               bio: data.bio,
               date: data.date,
               userId,
-              username, // 取得したusernameを含める
-              tags: data.tags || [], // タグを取得。存在しない場合は空配列を設定
+              username,
+              tags: data.tags || [],
+              title: data.title || "No Title",
+              groupID: data.groupID || "Unknown Group",
             };
 
-            // タグでグループ化
-            link.tags?.forEach((tag) => {
-              if (!groupedLinks[tag]) {
-                groupedLinks[tag] = [];
-              }
-              groupedLinks[tag].push(link);
-            });
+            // グループIDでグループ化
+            if (!groupedLinks[link.groupID]) {
+              groupedLinks[link.groupID] = {
+                groupName: groupName,
+                links: [],
+              };
+            }
+            groupedLinks[link.groupID].links.push(link);
           })
         );
 
-        setLinksByTag(groupedLinks);
+        setLinksByGroup(groupedLinks);
       } catch (error) {
         console.error("Error fetching links:", error);
       }
@@ -85,12 +110,13 @@ const Homepage = () => {
   return (
     <div className="flex justify-center mt-24 h-screen">
       <div className="w-full max-w-3xl">
-        {/* タグごとにグループ化されたリンクを表示 */}
-        {Object.keys(linksByTag).map((tag) => (
-          <div key={tag} className="mb-8">
-            <h2 className="text-2xl font-bold text-blue-500 mb-4">#{tag}</h2>{" "}
-            {/* タグ名を表示 */}
-            {linksByTag[tag].map((link) => (
+        {/* グループごとにグループ化されたリンクを表示 */}
+        {Object.keys(linksByGroup).map((groupID) => (
+          <div key={groupID} className="mb-8">
+            <h2 className="text-2xl font-bold text-blue-500 mb-4">
+              グループ: {linksByGroup[groupID].groupName}
+            </h2>
+            {linksByGroup[groupID].links.map((link) => (
               <div key={link.id} className="bg-gray-200 p-4 mb-4 rounded">
                 <p className="text-sm text-gray-500">
                   Username: {link.username}

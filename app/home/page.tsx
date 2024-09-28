@@ -32,9 +32,13 @@ interface GroupDataType {
 
 const Homepage = () => {
   const [linksByGroup, setLinksByGroup] = useState<{
-    [groupID: string]: { groupName: string; links: LinksDataType[] };
+    [groupID: string]: {
+      groupName: string;
+      tags: { [tag: string]: LinksDataType[] };
+    };
   }>({});
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchLinks = async () => {
@@ -44,10 +48,13 @@ const Homepage = () => {
         const querySnapshot = await getDocs(linksQuery);
 
         const groupedLinks: {
-          [groupID: string]: { groupName: string; links: LinksDataType[] };
+          [groupID: string]: {
+            groupName: string;
+            tags: { [tag: string]: LinksDataType[] };
+          };
         } = {};
 
-        // linksデータを取得し、対応するusernameとグループ名も取得してグループごとに分類
+        // linksデータを取得し、対応するusernameとグループ名も取得してグループ・タグごとに分類
         await Promise.all(
           querySnapshot.docs.map(async (linkDoc) => {
             const data = linkDoc.data();
@@ -92,10 +99,17 @@ const Homepage = () => {
             if (!groupedLinks[link.groupID]) {
               groupedLinks[link.groupID] = {
                 groupName: groupName,
-                links: [],
+                tags: {},
               };
             }
-            groupedLinks[link.groupID].links.push(link);
+
+            // タグでさらに分類
+            (link.tags || []).forEach((tag) => {
+              if (!groupedLinks[link.groupID].tags[tag]) {
+                groupedLinks[link.groupID].tags[tag] = [];
+              }
+              groupedLinks[link.groupID].tags[tag].push(link);
+            });
           })
         );
 
@@ -111,7 +125,7 @@ const Homepage = () => {
 
   return (
     <div className="flex h-screen mt-20">
-      {/* 左側のタブ */}
+      {/* 左側のタブ (グループ一覧) */}
       <div className="w-1/4 bg-gray-100 p-4 border-r">
         <h2 className="text-xl font-bold mb-4">参加グループ一覧</h2>
         {Object.keys(linksByGroup).map((groupID) => (
@@ -122,33 +136,58 @@ const Homepage = () => {
                 ? "bg-blue-500 text-white"
                 : "bg-gray-200"
             }`}
-            onClick={() => setSelectedGroup(groupID)}
+            onClick={() => {
+              setSelectedGroup(groupID);
+              setSelectedTag(null); // グループを選択した際にはタグ選択をリセット
+            }}
           >
             {linksByGroup[groupID].groupName}
           </div>
         ))}
       </div>
 
-      {/* 右側の投稿表示 */}
-      <div className="w-3/4 p-6">
+      {/* 中央のタブ (タグ一覧) */}
+      <div className="w-1/6 bg-gray-100 p-4 border-r">
         {selectedGroup && linksByGroup[selectedGroup] && (
-          <div>
-            {linksByGroup[selectedGroup].links.map((link) => (
-              <div key={link.id} className="bg-gray-200 p-4 mb-4 rounded">
-                <p className="text-sm text-gray-500">
-                  Username: {link.username}
-                </p>
-                <a href={link.url} className="text-xl font-bold text-blue-600">
-                  {link.url}
-                </a>
-                <p className="text-gray-700">{link.bio}</p>
-                <p className="text-sm text-gray-500">
-                  {link.date?.toDate().toLocaleString()}
-                </p>
+          <>
+            <h2 className="text-xl font-bold mb-4">タグ一覧</h2>
+            {Object.keys(linksByGroup[selectedGroup].tags).map((tag) => (
+              <div
+                key={tag}
+                className={`p-2 mb-2 cursor-pointer rounded ${
+                  selectedTag === tag ? "bg-blue-500 text-white" : "bg-gray-200"
+                }`}
+                onClick={() => setSelectedTag(tag)}
+              >
+                #{tag}
               </div>
             ))}
-          </div>
+          </>
         )}
+      </div>
+
+      {/* 右側の投稿表示 */}
+      <div className="w-1/2 p-6">
+        {selectedGroup &&
+          selectedTag &&
+          linksByGroup[selectedGroup]?.tags[selectedTag] && (
+            <div>
+              {linksByGroup[selectedGroup].tags[selectedTag].map((link) => (
+                <div key={link.id} className="bg-gray-200 p-4 mb-4 rounded">
+                  <a
+                    href={link.url}
+                    className="text-xl font-bold text-blue-600"
+                  >
+                    {link.title}
+                  </a>
+                  <p className="text-gray-700">{link.bio}</p>
+                  <p className="text-sm text-gray-500">
+                    Created by: {link.username}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
       </div>
     </div>
   );

@@ -34,6 +34,7 @@ const Homepage = () => {
   const [linksByGroup, setLinksByGroup] = useState<{
     [groupID: string]: { groupName: string; links: LinksDataType[] };
   }>({});
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchLinks = async () => {
@@ -99,6 +100,7 @@ const Homepage = () => {
         );
 
         setLinksByGroup(groupedLinks);
+        setSelectedGroup(Object.keys(groupedLinks)[0]); // 初期状態で最初のグループを選択
       } catch (error) {
         console.error("Error fetching links:", error);
       }
@@ -108,15 +110,30 @@ const Homepage = () => {
   }, []);
 
   return (
-    <div className="flex justify-center mt-24 h-screen">
-      <div className="w-full max-w-3xl">
-        {/* グループごとにグループ化されたリンクを表示 */}
+    <div className="flex h-screen mt-20">
+      {/* 左側のタブ */}
+      <div className="w-1/4 bg-gray-100 p-4 border-r">
+        <h2 className="text-xl font-bold mb-4">参加グループ一覧</h2>
         {Object.keys(linksByGroup).map((groupID) => (
-          <div key={groupID} className="mb-8">
-            <h2 className="text-2xl font-bold text-blue-500 mb-4">
-              グループ: {linksByGroup[groupID].groupName}
-            </h2>
-            {linksByGroup[groupID].links.map((link) => (
+          <div
+            key={groupID}
+            className={`p-2 mb-2 cursor-pointer rounded ${
+              selectedGroup === groupID
+                ? "bg-blue-500 text-white"
+                : "bg-gray-200"
+            }`}
+            onClick={() => setSelectedGroup(groupID)}
+          >
+            {linksByGroup[groupID].groupName}
+          </div>
+        ))}
+      </div>
+
+      {/* 右側の投稿表示 */}
+      <div className="w-3/4 p-6">
+        {selectedGroup && linksByGroup[selectedGroup] && (
+          <div>
+            {linksByGroup[selectedGroup].links.map((link) => (
               <div key={link.id} className="bg-gray-200 p-4 mb-4 rounded">
                 <p className="text-sm text-gray-500">
                   Username: {link.username}
@@ -131,7 +148,7 @@ const Homepage = () => {
               </div>
             ))}
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

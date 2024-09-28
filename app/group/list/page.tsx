@@ -17,7 +17,9 @@ import {
 
 const GroupListPage = () => {
   const { user } = useAppContext();
-  const [groups, setGroups] = useState<{ id: string; name: string }[]>([]);
+  const [groups, setGroups] = useState<
+    { id: string; name: string; members: { uid: string; username: string }[] }[]
+  >([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -34,13 +36,31 @@ const GroupListPage = () => {
           const userData = userSnapshot.data();
           const userGroups = userData.groups || [];
 
-          // グループIDからグループ名を取得
+          // グループIDからグループ名とメンバーを取得
           const groupPromises = userGroups.map(async (groupId: string) => {
             const groupRef = doc(db, "groups", groupId);
             const groupSnapshot = await getDoc(groupRef);
             if (groupSnapshot.exists()) {
               const groupData = groupSnapshot.data();
-              return { id: groupId, name: groupData.groupName };
+              const members = await Promise.all(
+                (groupData.members || []).map(async (memberId: string) => {
+                  const memberRef = doc(db, "users", memberId);
+                  const memberSnapshot = await getDoc(memberRef);
+                  if (memberSnapshot.exists()) {
+                    const memberData = memberSnapshot.data();
+                    return {
+                      uid: memberId,
+                      username: memberData.username || "Unknown User",
+                    };
+                  }
+                  return { uid: memberId, username: "Unknown User" };
+                })
+              );
+              return {
+                id: groupId,
+                name: groupData.groupName,
+                members,
+              };
             }
             return null;
           });
@@ -50,6 +70,7 @@ const GroupListPage = () => {
             resolvedGroups.filter((group) => group !== null) as {
               id: string;
               name: string;
+              members: { uid: string; username: string }[];
             }[]
           );
         }
@@ -111,8 +132,17 @@ const GroupListPage = () => {
           groups.map((group) => (
             <div key={group.id} className="bg-gray-200 p-4 mb-4 rounded">
               <h2 className="text-xl font-bold">{group.name}</h2>
+
+              {/* メンバーリストの表示 */}
+              <p className="text-lg mt-2">メンバー:</p>
+              <ul className="list-disc list-inside">
+                {group.members.map((member) => (
+                  <li key={member.uid}>{member.username}</li>
+                ))}
+              </ul>
+
               <button
-                className="bg-red-500 text-white p-2 rounded mt-2"
+                className="bg-red-500 text-white text-sm p-1 rounded mt-2"
                 onClick={() => handleLeaveGroup(group.id)}
               >
                 グループ脱退

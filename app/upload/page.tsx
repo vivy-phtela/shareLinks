@@ -139,35 +139,37 @@ const Upload = () => {
   };
 
   return (
-    <div className="flex justify-center h-screen items-center">
-      <div className="bg-gray-200 mt-20 p-5 rounded-2xl w-full max-w-md">
-        <p className="text-xl">URL</p>
-        <input
-          type="text"
-          placeholder="URLを入力してください"
-          className="w-full p-2 mt-2 border rounded"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-        />
-        <p className="text-xl mt-4">タイトル</p>
-        <input
-          type="text"
-          placeholder="タイトルを入力してください"
-          className="w-full p-2 mt-2 border rounded"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <p className="text-xl mt-4">説明</p>
-        <textarea
-          rows={3}
-          placeholder="説明を入力してください"
-          className="w-full p-2 mt-2 border rounded resize-none"
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-        />
+    <div className="flex justify-center">
+      <div className="bg-gray-200 mt-24 p-5 rounded-2xl w-full max-w-5xl flex justify-between gap-10">
+        <div className="w-1/2">
+          <p className="text-xl">URL</p>
+          <input
+            type="text"
+            placeholder="URLを入力してください"
+            className="w-full p-2 mt-2 border rounded"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+          />
+          <p className="text-xl mt-4">タイトル</p>
+          <input
+            type="text"
+            placeholder="タイトルを入力してください"
+            className="w-full p-2 mt-2 border rounded"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <p className="text-xl mt-4">説明</p>
+          <textarea
+            rows={3}
+            placeholder="説明を入力してください"
+            className="w-full p-2 mt-2 border rounded resize-none"
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+          />
+        </div>
 
-        {/* タグの入力フィールド */}
-        <div className="mt-4">
+        <div className="w-1/2">
+          {/* タグの入力フィールド */}
           <p className="text-xl">タグを追加</p>
           <div className="flex gap-2 mt-2">
             <input
@@ -207,23 +209,23 @@ const Upload = () => {
                 ))
               )}
             </div>
-          </div>
 
-          {/* グループ選択 */}
-          <div className="mt-4">
-            <p className="text-xl">投稿先のグループを選択</p>
-            <select
-              className="w-full p-2 border rounded mt-2"
-              value={selectedGroup}
-              onChange={(e) => setSelectedGroup(e.target.value)}
-            >
-              <option value="">グループを選択</option>
-              {groups.map((group) => (
-                <option key={group.id} value={group.id}>
-                  {group.name}
-                </option>
-              ))}
-            </select>
+            {/* グループ選択 */}
+            <div className="mt-4">
+              <p className="text-xl">投稿先のグループを選択</p>
+              <select
+                className="w-full p-2 border rounded mt-2"
+                value={selectedGroup}
+                onChange={(e) => setSelectedGroup(e.target.value)}
+              >
+                <option value="">グループを選択</option>
+                {groups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* 追加したタグを表示 */}
@@ -246,14 +248,14 @@ const Upload = () => {
               ))}
             </div>
           </div>
-        </div>
 
-        <button
-          onClick={handleSubmit}
-          className="bg-blue-500 text-white text-xl w-28 h-12 py-2 px-4 rounded hover:bg-blue-700 mt-4"
-        >
-          登録
-        </button>
+          <button
+            onClick={handleSubmit}
+            className="bg-blue-500 text-white text-xl w-28 h-12 py-2 px-4 rounded hover:bg-blue-700 mt-4"
+          >
+            登録
+          </button>
+        </div>
       </div>
     </div>
   );

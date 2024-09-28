@@ -8,17 +8,22 @@ import {
   addDoc,
   getDocs,
   collection,
+  doc,
+  getDoc,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Timestamp } from "firebase/firestore";
 
-const Uploadpage = () => {
+const Upload = () => {
   const { user } = useAppContext();
   const [url, setUrl] = useState("");
+  const [title, setTitle] = useState("");
   const [bio, setBio] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [groups, setGroups] = useState<{ id: string; name: string }[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState("");
   const router = useRouter();
 
   // Firestoreから既存のタグを取得
@@ -46,6 +51,46 @@ const Uploadpage = () => {
     fetchAvailableTags();
   }, []);
 
+  // ユーザーの所属するグループ名を取得
+  useEffect(() => {
+    const fetchUserGroups = async () => {
+      if (!user) return;
+
+      try {
+        const userRef = doc(db, "users", user.uid);
+        const userSnapshot = await getDoc(userRef);
+
+        if (userSnapshot.exists()) {
+          const userData = userSnapshot.data();
+          const userGroups = userData.groups || [];
+
+          // グループIDからグループ名を取得
+          const groupPromises = userGroups.map(async (groupId: string) => {
+            const groupRef = doc(db, "groups", groupId);
+            const groupSnapshot = await getDoc(groupRef);
+            if (groupSnapshot.exists()) {
+              const groupData = groupSnapshot.data();
+              return { id: groupId, name: groupData.groupName };
+            }
+            return null;
+          });
+
+          const resolvedGroups = await Promise.all(groupPromises);
+          setGroups(
+            resolvedGroups.filter((group) => group !== null) as {
+              id: string;
+              name: string;
+            }[]
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching user groups: ", error);
+      }
+    };
+
+    fetchUserGroups();
+  }, [user]);
+
   const handleAddTag = () => {
     if (tagInput.trim() !== "" && !tags.includes(tagInput.trim())) {
       setTags([...tags, tagInput.trim()]);
@@ -55,7 +100,7 @@ const Uploadpage = () => {
 
   const handleSelectTag = (tag: string) => {
     if (!tags.includes(tag)) {
-      setTags([...tags, tag]); // 選択された既存のタグを追加
+      setTags([...tags, tag]);
     }
   };
 
@@ -65,20 +110,28 @@ const Uploadpage = () => {
 
   const handleSubmit = async () => {
     try {
-      if (!user) return; // ログインしているか確認
+      if (!user) return;
+      if (!selectedGroup) {
+        alert("グループを選択してください");
+        return;
+      }
       const userId = user.uid;
 
       // Firestoreに保存
       await addDoc(collection(db, "users", userId, "links"), {
+        title: title,
         url: url,
         bio: bio,
         tags: tags,
         date: Timestamp.now(),
+        groupID: selectedGroup,
       });
 
       setUrl("");
+      setTitle("");
       setBio("");
       setTags([]);
+      setSelectedGroup("");
       router.push("/home");
     } catch (error) {
       console.error("Error", error);
@@ -95,6 +148,14 @@ const Uploadpage = () => {
           className="w-full p-2 mt-2 border rounded"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
+        />
+        <p className="text-xl mt-4">タイトル</p>
+        <input
+          type="text"
+          placeholder="タイトルを入力してください"
+          className="w-full p-2 mt-2 border rounded"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
         />
         <p className="text-xl mt-4">説明</p>
         <textarea
@@ -129,7 +190,7 @@ const Uploadpage = () => {
             <p className="text-xl">既存のタグを選択</p>
             <div className="flex flex-wrap gap-2 mt-2">
               {availableTags.length === 0 ? (
-                <p>タグがありません。</p> // タグがない場合
+                <p>タグがありません。</p>
               ) : (
                 availableTags.map((tag) => (
                   <button
@@ -146,6 +207,23 @@ const Uploadpage = () => {
                 ))
               )}
             </div>
+          </div>
+
+          {/* グループ選択 */}
+          <div className="mt-4">
+            <p className="text-xl">投稿先のグループを選択</p>
+            <select
+              className="w-full p-2 border rounded mt-2"
+              value={selectedGroup}
+              onChange={(e) => setSelectedGroup(e.target.value)}
+            >
+              <option value="">グループを選択</option>
+              {groups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* 追加したタグを表示 */}
@@ -181,4 +259,4 @@ const Uploadpage = () => {
   );
 };
 
-export default Uploadpage;
+export default Upload;

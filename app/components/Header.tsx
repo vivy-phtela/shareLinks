@@ -42,6 +42,30 @@ const Header = () => {
                     登録
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    href="/group/create"
+                    className="text-gray-700 hover:bg-blue-100 duration-300"
+                  >
+                    グループ作成
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/group/join"
+                    className="text-gray-700 hover:bg-blue-100 duration-300"
+                  >
+                    グループ参加
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/group/list"
+                    className="text-gray-700 hover:bg-blue-100 duration-300"
+                  >
+                    参加中のグループ
+                  </Link>
+                </li>
                 <div className="flex gap-2 items-center">
                   <li>
                     <FaUserCircle className="text-3xl" />
@@ -49,7 +73,7 @@ const Header = () => {
                   <div className="flex-col items-center">
                     <li className="flex flex-col items-center">
                       <div>
-                        <span className="text-red-500">{user.email}</span>
+                        <span className="text-blue-600">{user.email}</span>
                       </div>
                       <div
                         onClick={handleLogout}

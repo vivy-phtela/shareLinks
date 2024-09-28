@@ -32,7 +32,7 @@ const Register = () => {
         await setDoc(doc(db, "users", user.uid), {
           email: data.email,
           username: data.username,
-          id: user.uid,
+          groups: [], // 新規登録時は空の配列
         });
 
         router.push("/auth/login");
